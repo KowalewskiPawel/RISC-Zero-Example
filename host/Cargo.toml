@@ -1,9 +1,14 @@
 [package]
-name = "starter"
+name = "voting-machine"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-methods = { path = "../methods" }
+voting-machine-core = { path = "../core" }
+voting-machine-methods = { path = "../methods" }
 risc0-zkvm = { version = "0.14.0" }
 serde = "1.0"
+clap = "3.1.18"
+ctor = "0.1"
+env_logger = "0.9.0"
+log = "0.4.17"
