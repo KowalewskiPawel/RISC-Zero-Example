@@ -1,5 +1,3 @@
-// TODO: Rename this file to change the name of this method from METHOD_NAME
-
 #![no_main]
 // If you want to try std support, also update the guest Cargo.toml file
 #![no_std]  // std support is experimental
@@ -8,10 +6,9 @@ use risc0_zkvm::guest::env;
 risc0_zkvm::guest::entry!(main);
 
 pub fn main() {
-    // TODO: Implement your guest code here
     let a: u64 = env::read();
-    // Load the second number from the host
     let b: u64 = env::read();
+
     // Verify that neither of them are 1 (i.e. nontrivial factors)
     if a == 1 || b == 1 {
         panic!("Trivial factors")
