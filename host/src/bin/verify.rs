@@ -1,5 +1,5 @@
-use methods::{MULTIPLY_ID};
-use risc0_zkvm::{Receipt};
+use methods::MULTIPLY_ID;
+use risc0_zkvm::Receipt;
 
 fn main() {
     let rec_str = "./rec.bin".to_string();
