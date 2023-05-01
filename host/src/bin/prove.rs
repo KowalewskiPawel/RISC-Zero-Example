@@ -30,7 +30,7 @@ fn main() {
 
     let serialized = bincode::serialize(&receipt).unwrap();
 
-    let _saved_file = match std::fs::write("./rec.bin", serialized) {
+    let _saved_file = match std::fs::write("./receipt.bin", serialized) {
         Ok(()) => println!("Receipt saved and serialized as receipt.bin"),
         Err(_) => println!("Something went wrong"),
     };
@@ -74,7 +74,7 @@ mod tests {
 
     #[test]
     fn verify_receipt() {
-        let rec_str = "rec.bin".to_string();
+        let rec_str = "receipt.bin".to_string();
 
         let receipt_file = std::fs::read(&rec_str).unwrap();
         let receipt: Receipt = bincode::deserialize::<Receipt>(&receipt_file).unwrap();
