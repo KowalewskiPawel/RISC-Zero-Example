@@ -31,7 +31,7 @@ fn main() {
     let serialized = bincode::serialize(&receipt).unwrap();
 
     let _saved_file = match std::fs::write("./rec.bin", serialized) {
-        Ok(()) => println!("Receipt saved and serialised as receipt.bin"),
+        Ok(()) => println!("Receipt saved and serialized as receipt.bin"),
         Err(_) => println!("Something went wrong"),
     };
 }
