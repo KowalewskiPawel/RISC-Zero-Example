@@ -12,27 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![no_main]
+use risc0_zkvm::sha::Digest;
+use serde::{Deserialize, Serialize};
 
-use json::parse;
-use json_core::Outputs;
-use risc0_zkvm::{
-    guest::env,
-    sha::{Impl, Sha256},
-};
-
-use risc0_zkvm::guest::env;
-
-risc0_zkvm::guest::entry!(main);
-
-pub fn main() {
-    let data: String = env::read();
-    let sha = *Impl::hash_bytes(&data.as_bytes());
-    let data = parse(&data).unwrap();
-    let proven_val = data["critical_data"].as_u32().unwrap();
-    let out = Outputs {
-        data: proven_val,
-        hash: sha,
-    };
-    env::commit(&out);
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct Outputs {
+    pub data: u32,
+    pub hash: Digest,
 }

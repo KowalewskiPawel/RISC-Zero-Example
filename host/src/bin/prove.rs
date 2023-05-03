@@ -1,94 +1,77 @@
-use methods::{MULTIPLY_ELF};
-use risc0_zkvm::serde::{from_slice, to_vec};
-use risc0_zkvm::{Prover};
+// Copyright 2023 RISC Zero, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use json_core::Outputs;
+use json_methods::{MULTIPLY_ELF, MULTIPLY_JSON_ID};
+use risc0_zkvm::{
+    serde::{from_slice, to_vec},
+    Prover,
+};
 
 fn main() {
-    let a: u64 = 17;
-    let b: u64 = 23;
-    // Make the prover.
-    let mut prover =
-        Prover::new(MULTIPLY_ELF).expect("Prover should be constructed from valid ELF binary");
+    let data = include_str!("../res/example.json");
 
-    prover.add_input_u32_slice(&to_vec(&a).expect("should be serializable"));
-    prover.add_input_u32_slice(&to_vec(&b).expect("should be serializable"));
+    // Make the prover.
+    let mut prover = Prover::new(SEARCH_JSON_ELF)
+        .expect("Prover should be constructed from matching method code & ID");
+
+    prover.add_input_u32_slice(&to_vec(&data).expect("should be serializable"));
 
     // Run prover & generate receipt
-    let receipt = prover.run().expect(
-        "Code should be provable unless it had an error or exceeded the maximum cycle limit",
-    );
+    let receipt = prover.run().expect("Code should be provable");
 
-    // Code for transmitting or serializing the receipt for
-    // other parties to verify here
+    receipt
+        .verify(&SEARCH_JSON_ID)
+        .expect("Proven code should verify");
 
-    let c: u64 = from_slice(&receipt.journal).unwrap();
+    let journal = &receipt.journal;
+    let outputs: Outputs = from_slice(&journal).expect("Journal should contain an Outputs object");
 
-    // Print an assertion
-    println!(
-        "Hello, world! I know the factors of {}, and I can prove it!",
-        c
-    );
-
-    let serialized = bincode::serialize(&receipt).unwrap();
-
-    let _saved_file = match std::fs::write("./rec.bin", serialized) {
-        Ok(()) => println!("Receipt saved and serialized as receipt.bin"),
-        Err(_) => println!("Something went wrong"),
-    };
+    println!("\nThe JSON file with hash\n  {:?}\nprovably contains a field 'critical_data' with value {}\n", outputs.hash, outputs.data);
 }
 
 #[cfg(test)]
 mod tests {
-
-    use methods::{MULTIPLY_ELF, MULTIPLY_ID};
+    use json_core::Outputs;
+    use json_methods::{SEARCH_JSON_ELF, SEARCH_JSON_ID};
     use risc0_zkvm::{
         serde::{from_slice, to_vec},
-        Prover, Receipt,
+        Prover,
     };
 
-    const TEST_FACTOR_ONE: u64 = 17;
-    const TEST_FACTOR_TWO: u64 = 23;
-
     #[test]
-    fn run_factors() {
-        let mut prover = Prover::new(MULTIPLY_ELF).expect(
-            "Prover should be constructed from valid method source code and corresponding method ID",
-        );
+    fn main() {
+        let data = include_str!("../res/example.json");
 
-        prover.add_input_u32_slice(&to_vec(&TEST_FACTOR_ONE).expect("should be serializable"));
-        prover.add_input_u32_slice(&to_vec(&TEST_FACTOR_TWO).expect("should be serializable"));
+        // Make the prover.
+        let mut prover = Prover::new(SEARCH_JSON_ELF)
+            .expect("Prover should be constructed from matching method code & ID");
+        prover.add_input_u32_slice(&to_vec(&data).expect("should be serializable"));
 
-        let receipt = prover.run().expect("Should be able to prove valid code");
+        // Run prover & generate receipt
+        let receipt = prover.run().expect("Code should be provable");
+
         receipt
-            .verify(&MULTIPLY_ID)
+            .verify(&SEARCH_JSON_ID)
             .expect("Proven code should verify");
 
-        let result: u64 = from_slice(&receipt.journal).expect(
-            "Journal output should deserialize into the same types (& order) that it was written",
-        );
+        let journal = &receipt.journal;
+        let outputs: Outputs =
+            from_slice(&journal).expect("Journal should contain an Outputs object");
         assert_eq!(
-            result,
-            TEST_FACTOR_ONE * TEST_FACTOR_TWO,
-            "We expect the zkVM output to be the product of the inputs"
-        )
-    }
-
-    #[test]
-    fn verify_receipt() {
-        let rec_str = "rec.bin".to_string();
-
-        let receipt_file = std::fs::read(&rec_str).unwrap();
-        let receipt: Receipt = bincode::deserialize::<Receipt>(&receipt_file).unwrap();
-        receipt
-            .verify(&MULTIPLY_ID)
-            .expect("Proven code should verify");
-
-        let result: u64 = from_slice(&receipt.journal).expect(
-            "Journal output should deserialize into the same types (& order) that it was written",
+            outputs.data, 47,
+            "Did not find the expected value in the critical_data field"
         );
-        assert_eq!(
-            result,
-            TEST_FACTOR_ONE * TEST_FACTOR_TWO,
-            "We expect the zkVM output to be the product of the inputs"
-        )
     }
 }
