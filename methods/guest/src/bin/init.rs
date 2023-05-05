@@ -15,7 +15,9 @@
 #![no_main]
 #![no_std]
 
-use risc0_zkvm::guest::{env, sha};
+use risc0_zkvm::guest::env;
+use risc0_zkvm::sha::{Impl, Sha256};
+use risc0_zkvm::serde::to_vec; 
 
 use voting_machine_core::{InitializeVotingMachineCommit, VotingMachineState};
 
@@ -26,6 +28,6 @@ pub fn main() {
     env::commit(&InitializeVotingMachineCommit {
         polls_open: state.polls_open,
         voter_bitfield: state.voter_bitfield,
-        state: *sha::digest(&state),
+        state: *Impl::hash_words(&to_vec(&state).unwrap()),
     });
 }

@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::io::Cursor;
+
 use risc0_zkvm::serde::{from_slice, to_vec};
-use risc0_zkvm::{Prover, Receipt, Result};
+use risc0_zkvm::{Prover, ProverOpts, Receipt, Result};
 use voting_machine_core::{
-    Ballot, FreezeVotingMachineCommit, FreezeVotingMachineParams, FreezeVotingMachineResult,
-    InitializeVotingMachineCommit, SubmitBallotCommit, SubmitBallotParams, SubmitBallotResult,
+    Ballot, FreezeVotingMachineCommit, FreezeVotingMachineParams,
+    InitializeVotingMachineCommit, SubmitBallotCommit, SubmitBallotParams,
     VotingMachineState,
 };
 use voting_machine_methods::{FREEZE_ELF, FREEZE_ID, INIT_ELF, INIT_ID, SUBMIT_ELF, SUBMIT_ID};
@@ -31,7 +33,7 @@ impl InitMessage {
     }
 
     pub fn verify_and_get_commit(&self) -> Result<InitializeVotingMachineCommit> {
-        self.receipt.verify(INIT_ID)?;
+        self.receipt.verify(&INIT_ID)?;
         self.get_state()
     }
 }
@@ -46,7 +48,7 @@ impl SubmitBallotMessage {
     }
 
     pub fn verify_and_get_commit(&self) -> Result<SubmitBallotCommit> {
-        self.receipt.verify(SUBMIT_ID)?;
+        self.receipt.verify(&SUBMIT_ID)?;
         self.get_commit()
     }
 }
@@ -61,7 +63,7 @@ impl FreezeStationMessage {
     }
 
     pub fn verify_and_get_commit(&self) -> Result<FreezeVotingMachineCommit> {
-        self.receipt.verify(FREEZE_ID)?;
+        self.receipt.verify(&FREEZE_ID)?;
         self.get_commit()
     }
 }
@@ -88,28 +90,22 @@ impl PollingStation {
     pub fn submit(&mut self, ballot: &Ballot) -> Result<SubmitBallotMessage> {
         log::info!("submit: {:?}", ballot);
         let params = SubmitBallotParams::new(self.state.clone(), ballot.clone());
-        let mut prover = Prover::new(SUBMIT_ELF)?;
+        let opts = ProverOpts::default().with_stdin(Cursor::new(&mut self.state));
+        let mut prover = Prover::new_with_opts(SUBMIT_ELF, opts)?;
         let vec = to_vec(&params).unwrap();
         prover.add_input_u32_slice(vec.as_slice());
         let receipt = prover.run()?;
-        let vec = prover.get_output_u32_vec()?;
-        log::info!("{:?}", vec);
-        let result = from_slice::<SubmitBallotResult>(&vec);
-        log::info!("{:?}", result);
-        self.state = result.unwrap().state.clone();
         Ok(SubmitBallotMessage { receipt })
     }
 
     pub fn freeze(&mut self) -> Result<FreezeStationMessage> {
         log::info!("freeze");
         let params = FreezeVotingMachineParams::new(self.state.clone());
-        let mut prover = Prover::new(FREEZE_ELF)?;
+        let opts = ProverOpts::default().with_stdout_obj(&mut self.state);
+        let mut prover = Prover::new_with_opts(FREEZE_ELF, opts)?;
         let vec = to_vec(&params).unwrap();
         prover.add_input_u32_slice(vec.as_slice());
         let receipt = prover.run()?;
-        let slice = prover.get_output_u32_vec()?;
-        let result = from_slice::<FreezeVotingMachineResult>(&slice).unwrap();
-        self.state = result.state.clone();
         Ok(FreezeStationMessage { receipt })
     }
 }

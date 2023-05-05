@@ -15,7 +15,9 @@
 #![no_main]
 #![no_std]
 
-use risc0_zkvm::guest::{env, sha};
+use risc0_zkvm::guest::env;
+use risc0_zkvm::sha::{Impl, Sha256};
+use risc0_zkvm::serde::to_vec; 
 
 use voting_machine_core::{FreezeVotingMachineCommit, FreezeVotingMachineParams};
 
@@ -24,13 +26,13 @@ risc0_zkvm::guest::entry!(main);
 pub fn main() {
     let params: FreezeVotingMachineParams = env::read();
     let result = params.process();
-    env::write(&result);
+    env::write(&result.state);
     let polls_open = result.state.polls_open;
     let voter_bitfield = result.state.voter_bitfield;
     let count = result.state.count;
     env::commit(&FreezeVotingMachineCommit {
-        old_state: *sha::digest(&params.state),
-        new_state: *sha::digest(&result.state),
+        old_state: *Impl::hash_words(&to_vec(&params.state).unwrap()),
+        new_state: *Impl::hash_words(&to_vec(&result.state).unwrap()),
         polls_open: polls_open,
         voter_bitfield: voter_bitfield,
         count: count,
