@@ -1,6 +1,6 @@
-use methods::{MULTIPLY_ELF};
+use methods::{MULTIPLY_ELF, MULTIPLY_ID};
 use risc0_zkvm::serde::{from_slice, to_vec};
-use risc0_zkvm::{Prover};
+use risc0_zkvm::Prover;
 
 fn main() {
     let a: u64 = 17;
@@ -28,10 +28,16 @@ fn main() {
         c
     );
 
-    let serialized = bincode::serialize(&receipt).unwrap();
+    let serialized_receipt = bincode::serialize(&receipt).unwrap();
+    let serialized_image_id = bincode::serialize(&MULTIPLY_ID).unwrap();
 
-    let _saved_file = match std::fs::write("./receipt.bin", serialized) {
+    let _saved_receipt_file = match std::fs::write("./receipt.bin", serialized_receipt) {
         Ok(()) => println!("Receipt saved and serialized as receipt.bin"),
+        Err(_) => println!("Something went wrong"),
+    };
+
+    let _saved_image_id_file = match std::fs::write("./image_id.bin", serialized_image_id) {
+        Ok(()) => println!("Receipt saved and serialized as id.bin"),
         Err(_) => println!("Something went wrong"),
     };
 }
@@ -74,13 +80,16 @@ mod tests {
 
     #[test]
     fn verify_receipt() {
-        let rec_str = "receipt.bin".to_string();
+        let rec_str = "../receipt.bin".to_string();
 
         let receipt_file = std::fs::read(&rec_str).unwrap();
         let receipt: Receipt = bincode::deserialize::<Receipt>(&receipt_file).unwrap();
-        receipt
-            .verify(&MULTIPLY_ID)
-            .expect("Proven code should verify");
+
+        let id_str = "../id.bin".to_string();
+
+        let id_file = std::fs::read(&id_str).unwrap();
+        let id: [u32; 8] = bincode::deserialize::<[u32; 8]>(&id_file).unwrap();
+        receipt.verify(&id).expect("Proven code should verify");
 
         let result: u64 = from_slice(&receipt.journal).expect(
             "Journal output should deserialize into the same types (& order) that it was written",
