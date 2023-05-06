@@ -37,7 +37,7 @@ fn main() {
     };
 
     let _saved_image_id_file = match std::fs::write("./image_id.bin", serialized_image_id) {
-        Ok(()) => println!("Receipt saved and serialized as id.bin"),
+        Ok(()) => println!("ImageID saved and serialized as id.bin"),
         Err(_) => println!("Something went wrong"),
     };
 }
@@ -85,7 +85,7 @@ mod tests {
         let receipt_file = std::fs::read(&rec_str).unwrap();
         let receipt: Receipt = bincode::deserialize::<Receipt>(&receipt_file).unwrap();
 
-        let id_str = "../id.bin".to_string();
+        let id_str = "../image_id.bin".to_string();
 
         let id_file = std::fs::read(&id_str).unwrap();
         let id: [u32; 8] = bincode::deserialize::<[u32; 8]>(&id_file).unwrap();
