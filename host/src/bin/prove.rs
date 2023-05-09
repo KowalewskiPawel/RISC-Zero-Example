@@ -10,13 +10,14 @@ use signature_core::DateAndHash;
 fn main() {
 
     let a = "abc".to_string();
-    let now = SystemTime::now();
+    let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    let secs = now.as_secs();
     // Make the prover.
     let mut prover =
         Prover::new(SHA_ELF).expect("Prover should be constructed from valid ELF binary");
 
     prover.add_input_u32_slice(&to_vec(&a).expect("should be serializable"));
-    prover.add_input_u32_slice(&to_vec(&now).expect("should be serializable"));
+    prover.add_input_u32_slice(&to_vec(&secs).expect("should be serializable"));
 
     // Run prover & generate receipt
     let receipt = prover.run().expect(
@@ -26,7 +27,7 @@ fn main() {
     let receipt: DateAndHash = from_slice(&receipt.journal).expect("Journal should contain SHA Digest");
     // let time: SystemTime = from_slice(&receipt.journal).expect("Journal should contain SHA Digest");
 
-    println!("I provably know data whose SHA-256 hash is {}, time: {:?} ", receipt.sha_info, receipt.date);
+    println!("I provably know data whose SHA-256 hash is {}, time: {} ", receipt.sha_info, receipt.date);
 
     // // Code for transmitting or serializing the receipt for
     // // other parties to verify here
