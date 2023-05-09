@@ -10,9 +10,9 @@ pub fn main() {
     let data: String = env::read();
     let now: u64 = env::read();
     let sha = Impl::hash_bytes(&data.as_bytes());
-    let new_receipt = DateAndHash {
-        sha_info: *sha,
+    let sha_receipt = DateAndHash {
+        hash: *sha,
         date: now
     };
-    env::commit(&new_receipt);
+    env::commit(&sha_receipt);
 }
