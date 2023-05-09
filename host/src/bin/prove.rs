@@ -1,25 +1,32 @@
+use std::time::SystemTime;
+
 use methods::{SHA_ELF, SHA_ID};
 use risc0_zkvm::{
     serde::{from_slice, to_vec},
     sha::Digest,
     Prover, Receipt,
 };
+use signature_core::DateAndHash;
 fn main() {
+
     let a = "abc".to_string();
+    let now = SystemTime::now();
     // Make the prover.
     let mut prover =
         Prover::new(SHA_ELF).expect("Prover should be constructed from valid ELF binary");
 
     prover.add_input_u32_slice(&to_vec(&a).expect("should be serializable"));
+    prover.add_input_u32_slice(&to_vec(&now).expect("should be serializable"));
 
     // Run prover & generate receipt
     let receipt = prover.run().expect(
         "Code should be provable unless it had an error or exceeded the maximum cycle limit",
     );
 
-    let digest: Digest = from_slice(&receipt.journal).expect("Journal should contain SHA Digest");
+    let receipt: DateAndHash = from_slice(&receipt.journal).expect("Journal should contain SHA Digest");
+    // let time: SystemTime = from_slice(&receipt.journal).expect("Journal should contain SHA Digest");
 
-    println!("I provably know data whose SHA-256 hash is {}", digest);
+    println!("I provably know data whose SHA-256 hash is {}, time: {:?} ", receipt.sha_info, receipt.date);
 
     // // Code for transmitting or serializing the receipt for
     // // other parties to verify here
